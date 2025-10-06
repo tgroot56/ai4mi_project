@@ -63,6 +63,11 @@ datasets_params["SEGTHOR_CLEAN"] = {'K': 5, 'net': ENet, 'B': 8, 'kernels': 8, '
 datasets_params["SEGTHOR_CLEAN_SEED42"] = {'K': 5, 'net': ENet, 'B': 8, 'kernels': 8, 'factor': 2}
 datasets_params["SEGTHOR_CLEAN_SEED123"] = {'K': 5, 'net': ENet, 'B': 8, 'kernels': 8, 'factor': 2}
 datasets_params["SEGTHOR_CLEAN_SEED456"] = {'K': 5, 'net': ENet, 'B': 8, 'kernels': 8, 'factor': 2}
+datasets_params["SEGTHOR_AUGMENTED"] = {'K': 5, 'net': ENet, 'B': 8, 'kernels': 8, 'factor': 2}
+datasets_params["SEGTHOR_AUGMENTED_SEED42"] = {'K': 5, 'net': ENet, 'B': 8, 'kernels': 8, 'factor': 2}
+datasets_params["SEGTHOR_AUGMENTED_SEED123"] = {'K': 5, 'net': ENet, 'B': 8, 'kernels': 8, 'factor': 2}
+datasets_params["SEGTHOR_AUGMENTED_SEED456"] = {'K': 5, 'net': ENet, 'B': 8, 'kernels': 8, 'factor': 2}
+
 
 def set_seed(seed): # added this
     """Set seed for reproducibility"""
