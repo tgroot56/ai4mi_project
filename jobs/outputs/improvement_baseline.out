@@ -1,0 +1,58 @@
+============================================================================================== 
+Warning! Mixing Conda and module environments may lead to corruption of the
+user environment. 
+We do not recommend users mixing those two environments unless absolutely
+necessary. Note that 
+SURF does not provide any support for Conda environment.
+For more information, please refer to our software policy page:
+https://servicedesk.surf.nl/wiki/display/WIKI/Software+policy+Snellius#SoftwarepolicySnellius-UseofAnacondaandMinicondaenvironmentsonSnellius 
+
+Remember that many packages have already been installed on the system and can
+be loaded using 
+the 'module load <package__name>' command. If you are uncertain if a package is
+already available 
+on the system, please use 'module avail' or 'module spider' to search for it.
+============================================================================================== 
+Running baseline tests with complete pipeline...
+
+============================================================
+RUNNING COMPLETE PIPELINE FOR: BASELINE
+============================================================
+
+=== STEP 1: TRAINING BASELINE ===
+>>> Setting up to train on SEGTHOR_CLEAN with full
+>> Picked cuda to run experiments
+> Initialized ENet (in_dim=1->out_dim=5) with {'kernels': 8, 'factor': 2}
+> root=PosixPath('data/SEGTHOR_CLEAN')
+>> Created train dataset with 0 images...
+Traceback (most recent call last):
+  File "/gpfs/home2/scur1050/ai4mi_final_project/ai4mi_project/improvements/test_improvements.py", line 260, in <module>
+    main()
+  File "/gpfs/home2/scur1050/ai4mi_final_project/ai4mi_project/improvements/test_improvements.py", line 208, in main
+    results = run_complete_pipeline(args, 'baseline')
+  File "/gpfs/home2/scur1050/ai4mi_final_project/ai4mi_project/improvements/test_improvements.py", line 148, in run_complete_pipeline
+    runTraining(args)
+  File "/gpfs/home2/scur1050/ai4mi_final_project/ai4mi_project/main.py", line 129, in runTraining
+    net, optimizer, device, train_loader, val_loader, K = setup(args)
+  File "/gpfs/home2/scur1050/ai4mi_final_project/ai4mi_project/main.py", line 107, in setup
+    train_loader = DataLoader(train_set,
+  File "/home/scur1050/.conda/envs/ai4mi/lib/python3.10/site-packages/torch/utils/data/dataloader.py", line 388, in __init__
+    sampler = RandomSampler(dataset, generator=generator)  # type: ignore[arg-type]
+  File "/home/scur1050/.conda/envs/ai4mi/lib/python3.10/site-packages/torch/utils/data/sampler.py", line 156, in __init__
+    raise ValueError(
+ValueError: num_samples should be a positive integer value, but got num_samples=0
+
+JOB STATISTICS
+==============
+Job ID: 15125524
+Cluster: snellius
+User/Group: scur1050/scur1050
+State: RUNNING
+Nodes: 1
+Cores per node: 18
+CPU Utilized: 00:00:00
+CPU Efficiency: 0.00% of 00:06:18 core-walltime
+Job Wall-clock time: 00:00:21
+Memory Utilized: 0.00 MB
+Memory Efficiency: 0.00% of 120.00 GB (120.00 GB/node)
+WARNING: Efficiency statistics can only be obtained after the job has ended as seff tool is based on the accounting database data.
