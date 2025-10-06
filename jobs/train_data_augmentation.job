@@ -1,0 +1,42 @@
+#!/bin/bash
+
+#SBATCH --partition=gpu_a100
+#SBATCH --gpus=1
+#SBATCH --job-name=train_augmented
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=9
+#SBATCH --time=08:00:00
+#SBATCH --output=outputs/train_augmented.out
+
+module purge
+module load 2023
+module load Anaconda3/2023.07-2
+source activate ai4mi
+
+for SEED in 42 123 456; do
+    echo "Running baseline with dataset seed $SEED and training seed $SEED"
+    
+    # Run training with matching seed
+    python -O main.py \
+        --dataset SEGTHOR_AUGMENTED_SEED${SEED} \
+        --mode full \
+        --epochs 25 \
+        --dest improvements/results/AUGMENTED_SEED${SEED} \
+        --seed $SEED \
+        --gpu
+    
+    echo "Completed seed $SEED"
+done
+
+# usage: main.py [-h] [--epochs EPOCHS] [--dataset {TOY2,SEGTHOR,SEGTHOR_CLEAN}] [--mode {partial,full}] --dest DEST [--gpu] [--debug]
+
+# options:
+#   -h, --help            show this help message and exit
+#   --epochs EPOCHS
+#   --dataset {TOY2,SEGTHOR,SEGTHOR_CLEAN}
+#   --mode {partial,full}
+#   --dest DEST           Destination directory to save the results (predictions and weights).
+#   --gpu
+#   --debug               Keep only a fraction (10 samples) of the datasets, to test the logics around epochs and logging easily.
+
+# Run baseline with matching dataset and training seeds

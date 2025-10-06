@@ -13,4 +13,12 @@ module load 2023
 module load Anaconda3/2023.07-2
 source activate ai4mi
 
-python improvements/data_augmentation.py --src data/SEGTHOR_CLEAN --dst data/SEGTHOR_AUGMENTED
+#python improvements/data_augmentation.py --src data/SEGTHOR_CLEAN --dst data/SEGTHOR_AUGMENTED
+
+for SEED in 42 123 456; do
+    echo "Data augmentation for seed $SEED"
+    
+    python improvements/data_augmentation.py --src data/SEGTHOR_CLEAN_SEED${SEED} --dst data/SEGTHOR_AUGMENTED_SEED${SEED}
+    
+    echo "Completed seed $SEED"
+done

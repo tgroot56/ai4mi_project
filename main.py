@@ -264,7 +264,7 @@ def main():
 
     args = parser.parse_args()
 
-    pprint(args)
+    print(args)
 
     runTraining(args)
 
