@@ -1,3 +1,4 @@
+outputs/*
 data/*
 !data/*.b3sum
 !data/*.sha256
