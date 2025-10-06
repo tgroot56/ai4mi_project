@@ -2,9 +2,11 @@ outputs/*
 data/*
 !data/*.b3sum
 !data/*.sha256
-results/
+results/**
+!results/**/
+!results/**/metrics*/
+!results/**/metrics*/**
 volumes/
 ai4mi/
 __pycache__/
-!results/baseline/*
 projects
