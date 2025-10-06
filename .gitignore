@@ -6,5 +6,5 @@ results/
 volumes/
 ai4mi/
 __pycache__/
-
+!results/baseline/*
 projects
