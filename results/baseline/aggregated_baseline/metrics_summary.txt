@@ -1,0 +1,40 @@
+================================================================================
+CROSS-SEED METRICS SUMMARY
+================================================================================
+
+EXPERIMENT: BASELINE
+--------------------------------------------------
+
+3D_DICE:
+  Seeds used: [42, 123, 456] (3 total)
+  Patients: 10
+  Classes: 5
+  Overall (all classes): 0.7299 ± 0.2360
+  Foreground only: 0.6628 ± 0.2170
+  Per-class statistics:
+    Background  : 0.9984 ± 0.0007
+    Esophagus   : 0.4180 ± 0.1550
+    Heart       : 0.8633 ± 0.0682
+    Trachea     : 0.6672 ± 0.1839
+    Aorta       : 0.7027 ± 0.1554
+
+3D_HD95:
+  Seeds used: [42, 123, 456] (3 total)
+  Patients: 10
+  Classes: 5
+  Overall (all classes): 14.1323 ± 16.2805
+  Foreground only: 17.2518 ± 16.8045
+  Per-class statistics:
+    Background  : 1.6546 ± 1.0432
+    Esophagus   : 15.5861 ± 10.1849
+    Heart       : 15.2826 ± 8.3604
+    Trachea     : 15.9169 ± 16.3174
+    Aorta       : 22.2214 ± 25.6232
+
+==================================================
+
+NOTES:
+- Values shown as mean ± standard deviation across seeds
+- For Dice: Higher values indicate better performance
+- For HD95: Lower values indicate better performance
+- Foreground metrics exclude the background class

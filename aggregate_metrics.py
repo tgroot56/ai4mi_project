@@ -8,11 +8,9 @@ This script processes metrics from multiple seed experiments and creates summary
 
 import argparse
 import numpy as np
-import pandas as pd
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional
 import json
-from collections import defaultdict
 
 def load_metrics_from_seed(metrics_folder: Path, metric_name: str) -> Optional[np.ndarray]:
     """Load metrics for a specific seed"""
@@ -35,7 +33,7 @@ def aggregate_seed_metrics(base_path: Path, experiment_name: str, seeds: List[in
         valid_seeds = []
         
         for seed in seeds:
-            metrics_path = base_path / f"{experiment_name}_seed{seed}" / "metrics"
+            metrics_path = base_path / f"{experiment_name}" / f"metrics_seed{seed}"
             
             if not metrics_path.exists():
                 print(f"Warning: Metrics folder not found: {metrics_path}")
@@ -63,6 +61,11 @@ def aggregate_seed_metrics(base_path: Path, experiment_name: str, seeds: List[in
             per_class_mean = np.mean(stacked_data, axis=(0, 1))  # (n_classes,)
             per_class_std = np.std(stacked_data, axis=(0, 1))    # (n_classes,)
             
+            # Calculate foreground-only statistics (excluding background class 0)
+            fg_data = stacked_data[:, :, 1:]  # Remove background class
+            fg_overall_mean = np.mean(fg_data)
+            fg_overall_std = np.std(fg_data)
+            
             aggregated_results[metric_name] = {
                 'raw_data': stacked_data,
                 'valid_seeds': valid_seeds,
@@ -72,6 +75,8 @@ def aggregate_seed_metrics(base_path: Path, experiment_name: str, seeds: List[in
                 'overall_std': overall_std,
                 'per_class_mean': per_class_mean,
                 'per_class_std': per_class_std,
+                'fg_overall_mean': fg_overall_mean,
+                'fg_overall_std': fg_overall_std,
                 'n_seeds': len(valid_seeds),
                 'n_patients': stacked_data.shape[1],
                 'n_classes': stacked_data.shape[2]
@@ -81,108 +86,112 @@ def aggregate_seed_metrics(base_path: Path, experiment_name: str, seeds: List[in
     
     return aggregated_results
 
-def create_summary_table(results_dict: Dict, class_names: Optional[List[str]] = None) -> pd.DataFrame:
-    """Create a summary table with mean ± std for each experiment and metric"""
-    
-    if class_names is None:
-        # Default SEGTHOR class names
-        class_names = ['Background', 'Esophagus', 'Heart', 'Trachea', 'Aorta']
-    
-    summary_data = []
-    
-    for experiment_name, metrics_data in results_dict.items():
-        row_data = {'Experiment': experiment_name}
-        
-        for metric_name, metric_stats in metrics_data.items():
-            if metric_stats:  # Check if data exists
-                # Overall statistics
-                row_data[f'{metric_name}_overall'] = f"{metric_stats['overall_mean']:.3f} ± {metric_stats['overall_std']:.3f}"
-                row_data[f'{metric_name}_n_seeds'] = metric_stats['n_seeds']
-                
-                # Per-class statistics
-                for i, class_name in enumerate(class_names[:metric_stats['n_classes']]):
-                    if i < len(metric_stats['per_class_mean']):
-                        mean_val = metric_stats['per_class_mean'][i]
-                        std_val = metric_stats['per_class_std'][i]
-                        row_data[f'{metric_name}_{class_name}'] = f"{mean_val:.3f} ± {std_val:.3f}"
-        
-        summary_data.append(row_data)
-    
-    return pd.DataFrame(summary_data)
-
-def save_detailed_results(results_dict: Dict, output_dir: Path, class_names: Optional[List[str]] = None):
-    """Save detailed results including per-patient statistics"""
+def print_and_save_summary(results_dict: Dict, output_file: Path, class_names: Optional[List[str]] = None):
+    """Print and save summary statistics to console and text file"""
     
     if class_names is None:
         class_names = ['Background', 'Esophagus', 'Heart', 'Trachea', 'Aorta']
     
-    output_dir.mkdir(parents=True, exist_ok=True)
+    # Prepare output content
+    output_lines = []
+    output_lines.append("=" * 80)
+    output_lines.append("CROSS-SEED METRICS SUMMARY")
+    output_lines.append("=" * 80)
+    output_lines.append("")
     
     for experiment_name, metrics_data in results_dict.items():
-        exp_output_dir = output_dir / experiment_name
-        exp_output_dir.mkdir(exist_ok=True)
+        output_lines.append(f"EXPERIMENT: {experiment_name.upper()}")
+        output_lines.append("-" * 50)
         
         for metric_name, metric_stats in metrics_data.items():
             if not metric_stats:
                 continue
                 
-            # Save raw aggregated data
-            np.save(exp_output_dir / f"{metric_name}_aggregated.npy", metric_stats['raw_data'])
+            output_lines.append(f"\n{metric_name.upper()}:")
+            output_lines.append(f"  Seeds used: {metric_stats['valid_seeds']} ({metric_stats['n_seeds']} total)")
+            output_lines.append(f"  Patients: {metric_stats['n_patients']}")
+            output_lines.append(f"  Classes: {metric_stats['n_classes']}")
             
-            # Save per-patient means and stds
-            np.save(exp_output_dir / f"{metric_name}_patient_means.npy", metric_stats['mean_per_patient'])
-            np.save(exp_output_dir / f"{metric_name}_patient_stds.npy", metric_stats['std_per_patient'])
+            # Overall statistics (all classes including background)
+            output_lines.append(f"  Overall (all classes): {metric_stats['overall_mean']:.4f} ± {metric_stats['overall_std']:.4f}")
             
-            # Create per-patient CSV
-            n_patients, n_classes = metric_stats['mean_per_patient'].shape
-            patient_data = []
+            # Foreground-only statistics (excluding background)
+            output_lines.append(f"  Foreground only: {metric_stats['fg_overall_mean']:.4f} ± {metric_stats['fg_overall_std']:.4f}")
             
-            for patient_idx in range(n_patients):
-                row = {'Patient': f'Patient_{patient_idx:02d}'}
-                for class_idx in range(n_classes):
-                    class_name = class_names[class_idx] if class_idx < len(class_names) else f'Class_{class_idx}'
-                    mean_val = metric_stats['mean_per_patient'][patient_idx, class_idx]
-                    std_val = metric_stats['std_per_patient'][patient_idx, class_idx]
-                    row[f'{class_name}_mean'] = mean_val
-                    row[f'{class_name}_std'] = std_val
-                patient_data.append(row)
-            
-            patient_df = pd.DataFrame(patient_data)
-            patient_df.to_csv(exp_output_dir / f"{metric_name}_per_patient.csv", index=False)
-            
-            # Save summary statistics as JSON
-            summary_stats = {
+            # Per-class statistics
+            output_lines.append("  Per-class statistics:")
+            for i, (mean_val, std_val) in enumerate(zip(metric_stats['per_class_mean'], metric_stats['per_class_std'])):
+                class_name = class_names[i] if i < len(class_names) else f'Class_{i}'
+                output_lines.append(f"    {class_name:<12}: {mean_val:.4f} ± {std_val:.4f}")
+        
+        output_lines.append("")
+        output_lines.append("=" * 50)
+        output_lines.append("")
+    
+    # Add notes
+    output_lines.append("NOTES:")
+    output_lines.append("- Values shown as mean ± standard deviation across seeds")
+    output_lines.append("- For Dice: Higher values indicate better performance")
+    output_lines.append("- For HD95: Lower values indicate better performance")
+    output_lines.append("- Foreground metrics exclude the background class")
+    
+    # Print to console
+    for line in output_lines:
+        print(line)
+    
+    # Save to file
+    output_file.parent.mkdir(parents=True, exist_ok=True)
+    with open(output_file, 'w') as f:
+        f.write('\n'.join(output_lines))
+    
+    print(f"\n✓ Summary saved to: {output_file}")
+
+def save_json_summary(results_dict: Dict, output_file: Path):
+    """Save summary statistics as JSON for programmatic access"""
+    
+    json_data = {}
+    
+    for experiment_name, metrics_data in results_dict.items():
+        json_data[experiment_name] = {}
+        
+        for metric_name, metric_stats in metrics_data.items():
+            if not metric_stats:
+                continue
+                
+            json_data[experiment_name][metric_name] = {
                 'overall_mean': float(metric_stats['overall_mean']),
                 'overall_std': float(metric_stats['overall_std']),
-                'per_class_mean': metric_stats['per_class_mean'].tolist(),
-                'per_class_std': metric_stats['per_class_std'].tolist(),
+                'foreground_mean': float(metric_stats['fg_overall_mean']),
+                'foreground_std': float(metric_stats['fg_overall_std']),
+                'per_class_mean': [float(x) for x in metric_stats['per_class_mean']],
+                'per_class_std': [float(x) for x in metric_stats['per_class_std']],
                 'n_seeds': metric_stats['n_seeds'],
                 'n_patients': metric_stats['n_patients'],
                 'n_classes': metric_stats['n_classes'],
                 'valid_seeds': metric_stats['valid_seeds']
             }
-            
-            with open(exp_output_dir / f"{metric_name}_summary.json", 'w') as f:
-                json.dump(summary_stats, f, indent=2)
+    
+    with open(output_file, 'w') as f:
+        json.dump(json_data, f, indent=2)
+    
+    print(f"✓ JSON summary saved to: {output_file}")
 
 def main():
     parser = argparse.ArgumentParser(description='Aggregate metrics across multiple seeds')
     parser.add_argument('--base_path', type=Path, required=True,
-                        help='Base path containing experiment results (e.g., results/)')
+                        help='Base path containing experiment results (e.g., improvements/results/)')
     parser.add_argument('--experiments', nargs='+', required=True,
-                        help='List of experiment names (e.g., baseline preprocessing data_augmentation)')
+                        help='List of experiment names (e.g., baseline preprocessing)')
     parser.add_argument('--seeds', nargs='+', type=int, default=[42, 123, 456],
                         help='List of seeds used in experiments')
     parser.add_argument('--metrics', nargs='+', default=['3d_dice', '3d_hd95'],
                         choices=['3d_dice', '3d_hd95', '3d_hd', '3d_jaccard', '3d_assd'],
                         help='Metrics to aggregate')
-    parser.add_argument('--output_dir', type=Path, default=Path('results/aggregated_metrics'),
+    parser.add_argument('--output_dir', type=Path, default=Path('improvements/results/aggregated'),
                         help='Directory to save aggregated results')
     parser.add_argument('--class_names', nargs='+', 
                         default=['Background', 'Esophagus', 'Heart', 'Trachea', 'Aorta'],
                         help='Names of the classes')
-    parser.add_argument('--summary_only', action='store_true',
-                        help='Only create summary table, skip detailed per-patient files')
     
     args = parser.parse_args()
     
@@ -214,8 +223,8 @@ def main():
             # Print quick summary
             for metric_name, metric_stats in results.items():
                 if metric_stats:
-                    print(f"  {metric_name}: {metric_stats['overall_mean']:.3f} ± {metric_stats['overall_std']:.3f} "
-                          f"({metric_stats['n_seeds']} seeds)")
+                    print(f"  {metric_name}: {metric_stats['fg_overall_mean']:.3f} ± {metric_stats['fg_overall_std']:.3f} "
+                          f"(foreground, {metric_stats['n_seeds']} seeds)")
         else:
             print(f"✗ No data found for {experiment}")
         print()
@@ -224,58 +233,41 @@ def main():
         print("No valid results found. Exiting.")
         return
     
-    # Create and save summary table
-    summary_df = create_summary_table(all_results, args.class_names)
+    # Print and save summary
+    output_txt = args.output_dir / "metrics_summary.txt"
+    output_json = args.output_dir / "metrics_summary.json"
     
-    # Save summary table
-    args.output_dir.mkdir(parents=True, exist_ok=True)
-    summary_csv_path = args.output_dir / "summary_table.csv"
-    summary_df.to_csv(summary_csv_path, index=False)
-    
-    # Also save as formatted text table
-    summary_txt_path = args.output_dir / "summary_table.txt"
-    with open(summary_txt_path, 'w') as f:
-        f.write("CROSS-SEED METRICS SUMMARY\n")
-        f.write("=" * 80 + "\n\n")
-        f.write(summary_df.to_string(index=False))
-        f.write("\n\nNotes:\n")
-        f.write("- Values shown as mean ± standard deviation across seeds\n")
-        f.write("- Lower HD95 values indicate better performance\n")
-        f.write("- Higher Dice values indicate better performance\n")
-    
-    print("=" * 60)
-    print("SUMMARY TABLE")
-    print("=" * 60)
-    print(summary_df.to_string(index=False))
-    print()
-    print(f"✓ Summary table saved to: {summary_csv_path}")
-    print(f"✓ Formatted summary saved to: {summary_txt_path}")
-    
-    # Save detailed results unless summary_only is specified
-    if not args.summary_only:
-        save_detailed_results(all_results, args.output_dir, args.class_names)
-        print(f"✓ Detailed results saved to: {args.output_dir}")
+    print_and_save_summary(all_results, output_txt, args.class_names)
+    save_json_summary(all_results, output_json)
     
     # Print recommendations
     print("\n" + "=" * 60)
     print("RECOMMENDATIONS")
     print("=" * 60)
     
-    # Find best experiment for each metric
+    # Find best experiment for each metric (using foreground metrics)
     for metric in args.metrics:
-        metric_col = f"{metric}_overall"
-        if metric_col in summary_df.columns:
-            # Extract numeric values (mean) from "mean ± std" format
-            summary_df[f'{metric}_numeric'] = summary_df[metric_col].str.extract(r'(\d+\.\d+)').astype(float)
-            
-            if metric == '3d_dice':
-                best_idx = summary_df[f'{metric}_numeric'].idxmax()
-                print(f"🏆 Best {metric}: {summary_df.iloc[best_idx]['Experiment']} "
-                      f"({summary_df.iloc[best_idx][metric_col]})")
-            elif 'hd' in metric:
-                best_idx = summary_df[f'{metric}_numeric'].idxmin()  # Lower is better for HD metrics
-                print(f"🏆 Best {metric}: {summary_df.iloc[best_idx]['Experiment']} "
-                      f"({summary_df.iloc[best_idx][metric_col]})")
+        best_exp = None
+        best_value = None
+        
+        for exp_name, exp_data in all_results.items():
+            if metric in exp_data and exp_data[metric]:
+                value = exp_data[metric]['fg_overall_mean']
+                
+                if best_exp is None:
+                    best_exp = exp_name
+                    best_value = value
+                else:
+                    if metric == '3d_dice' and value > best_value:  # Higher is better
+                        best_exp = exp_name
+                        best_value = value
+                    elif 'hd' in metric and value < best_value:  # Lower is better
+                        best_exp = exp_name
+                        best_value = value
+        
+        if best_exp:
+            best_std = all_results[best_exp][metric]['fg_overall_std']
+            print(f"🏆 Best {metric} (foreground): {best_exp} ({best_value:.3f} ± {best_std:.3f})")
 
 if __name__ == "__main__":
     main()
