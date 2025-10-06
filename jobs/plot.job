@@ -1,0 +1,32 @@
+#!/bin/bash
+
+#SBATCH --partition=gpu_a100
+#SBATCH --gpus=1
+#SBATCH --job-name=plot
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=9
+#SBATCH --time=00:20:00
+#SBATCH --output=outputs/plot.out
+
+module purge
+module load 2023
+module load Anaconda3/2023.07-2
+source activate ai4mi
+
+# python plot.py --help
+# usage: plot.py [-h] --metric_file METRIC_MODE.npy [--dest METRIC_MODE.png] [--headless]
+
+# Plot data over time
+
+# options:
+#   -h, --help            show this help message and exit
+#   --metric_file METRIC_MODE.npy
+#                         The metric file to plot.
+#   --dest METRIC_MODE.png
+#                         Optional: save the plot to a .png file
+#   --headless            Does not display the plot and save it directly (implies --dest to be provided.
+
+python plot.py --metric_file results/SEGTHOR_CLEAN/dice_val.npy --dest results/SEGTHOR_CLEAN/dice_val.png
+python plot.py --metric_file results/SEGTHOR_CLEAN/dice_tra.npy --dest results/SEGTHOR_CLEAN/dice_tra.png
+python plot.py --metric_file results/SEGTHOR_CLEAN/loss_val.npy --dest results/SEGTHOR_CLEAN/loss_val.png
+python plot.py --metric_file results/SEGTHOR_CLEAN/loss_tra.npy --dest results/SEGTHOR_CLEAN/loss_tra.png
