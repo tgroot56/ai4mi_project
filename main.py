@@ -33,6 +33,8 @@ from shutil import copytree, rmtree
 import torch
 import numpy as np
 import torch.nn.functional as F
+import random
+import numpy as np
 from torch import nn, Tensor
 from torchvision import transforms
 from torch.utils.data import DataLoader
@@ -58,6 +60,16 @@ datasets_params: dict[str, dict[str, Any]] = {}
 datasets_params["TOY2"] = {'K': 2, 'net': shallowCNN, 'B': 2, 'kernels': 8, 'factor': 2}
 datasets_params["SEGTHOR"] = {'K': 5, 'net': ENet, 'B': 8, 'kernels': 8, 'factor': 2}
 datasets_params["SEGTHOR_CLEAN"] = {'K': 5, 'net': ENet, 'B': 8, 'kernels': 8, 'factor': 2}
+
+def set_seed(seed): # added this
+    """Set seed for reproducibility"""
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed(seed)
+    torch.cuda.manual_seed_all(seed)
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
 
 def img_transform(img):
         img = img.convert('L')
@@ -245,6 +257,7 @@ def main():
     parser.add_argument('--debug', action='store_true',
                         help="Keep only a fraction (10 samples) of the datasets, "
                              "to test the logics around epochs and logging easily.")
+    parser.add_argument('--seed', type=int, required=True, choices=[42, 123, 456])
 
     args = parser.parse_args()
 

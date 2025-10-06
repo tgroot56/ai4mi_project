@@ -5,7 +5,7 @@
 #SBATCH --job-name=run_baseline
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=9
-#SBATCH --time=00:40:00
+#SBATCH --time=08:00:00
 #SBATCH --output=outputs/run_baseline2.out
 
 module purge
@@ -24,4 +24,18 @@ source activate ai4mi
 #   --gpu
 #   --debug               Keep only a fraction (10 samples) of the datasets, to test the logics around epochs and logging easily.
 
-python -O main.py --dataset SEGTHOR_CLEAN --mode full --epochs 25 --dest results/SEGTHOR_CLEAN --gpu
+# Run baseline with matching dataset and training seeds
+for SEED in 42 123 456; do
+    echo "Running baseline with dataset seed $SEED and training seed $SEED"
+    
+    # Run training with matching seed
+    python -O main.py \
+        --dataset SEGTHOR_CLEAN_SEED${SEED} \
+        --mode full \
+        --epochs 25 \
+        --dest improvements/results/baseline_seed${SEED} \
+        --seed $SEED \
+        --gpu
+    
+    echo "Completed seed $SEED"
+done
