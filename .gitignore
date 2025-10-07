@@ -12,4 +12,4 @@ volumes/
 ai4mi/
 __pycache__/
 projects
-!distorch/distorch/compute_metrics.py
+!distorch/compute_metrics.py
