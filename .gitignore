@@ -8,6 +8,7 @@ results/**
 !results/**/metrics*/**
 !results/**/aggregated_baseline/
 !results/**/aggregated_baseline/**
+improvements/results/
 volumes/
 ai4mi/
 __pycache__/
