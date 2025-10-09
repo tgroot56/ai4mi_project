@@ -8,6 +8,8 @@ results/**
 !results/**/metrics*/**
 !results/**/aggregated_baseline/
 !results/**/aggregated_baseline/**
+!results/**/aggregated_preprocessing/
+!results/**/aggregated_preprocessing/**
 improvements/results/
 volumes/
 ai4mi/
