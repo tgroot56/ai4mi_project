@@ -23,7 +23,7 @@ for SEED in 42 123 456; do
         --ref_extension .nii.gz \
         --pred_extension .nii.gz \
         --num_classes 5 \
-        --save_folder results/improvements/preprocessing_metrics_seed${SEED} \
+        --save_folder results/improvements/metrics_seed${SEED} \
         --overwrite
     
     echo "Completed metrics for seed $SEED"
