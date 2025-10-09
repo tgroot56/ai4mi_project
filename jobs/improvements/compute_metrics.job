@@ -1,0 +1,32 @@
+#!/bin/bash
+
+#SBATCH --partition=gpu_a100
+#SBATCH --gpus=1
+#SBATCH --job-name=compute_metrics
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=9
+#SBATCH --time=01:00:00
+#SBATCH --output=outputs/improvements/preprocessing/compute_metrics.out
+
+module purge
+module load 2023
+module load Anaconda3/2023.07-2
+source activate ai4mi
+
+# Compute metrics for all three seeds
+for SEED in 42 123 456; do
+    echo "Computing metrics for seed $SEED..."
+    python distorch/compute_metrics.py \
+        --metrics 3d_hd95 3d_dice \
+        --ref_folder stitched_data/improvements/preprocessing_seed${SEED}/val/gt \
+        --pred_folder stitched_data/improvements/preprocessing_seed${SEED}/val/pred \
+        --ref_extension .nii.gz \
+        --pred_extension .nii.gz \
+        --num_classes 5 \
+        --save_folder results/improvements/preprocessing_metrics_seed${SEED} \
+        --overwrite
+    
+    echo "Completed metrics for seed $SEED"
+done
+
+echo "All metrics computation completed!"
