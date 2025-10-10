@@ -33,7 +33,7 @@ for SEED in 42 123 456; do
         --dataset SEGTHOR_CLEAN_SEED${SEED} \
         --mode full \
         --epochs 25 \
-        --dest improvements/results/[MODEL_NAME_HERE]${SEED} \
+        --dest results/[MODEL_NAME_HERE]${SEED} \
         --seed $SEED \
         --gpu
     
