@@ -11,7 +11,7 @@ import nibabel as nib
 from PIL import Image
 
 # Import post-processing function
-from postprocess import postprocess_volume
+from improvements.postprocessing import postprocess_volume
 
 
 def get_args() -> argparse.Namespace:
@@ -28,11 +28,11 @@ def get_args() -> argparse.Namespace:
     parser.add_argument('--source_scan_pattern', type=str, required=True,
                         help="Pattern for original scan files with {id_} placeholder")
     
-    # # Post-processing options
-    # parser.add_argument('--pp_min_size_voxels', type=int, default=1000,
-    #                 help='Min component size (voxels) for 3D post-processing when keep_largest is False')
-    # parser.add_argument('--pp_keep_largest', action='store_true',
-    #                 help='If set, keep only the largest 3D component per class when post-processing')
+    # Post-processing options
+    parser.add_argument('--pp_min_size_voxels', type=int, default=1000,
+                    help='Min component size (voxels) for 3D post-processing when keep_largest is False')
+    parser.add_argument('--pp_keep_largest', action='store_true',
+                    help='If set, keep only the largest 3D component per class when post-processing')
 
     
     args = parser.parse_args()
@@ -147,22 +147,22 @@ def main():
             
             volume_3d = stitch_patient_slices(slice_files, target_shape, args.num_classes)
 
-            save_nifti_volume(volume_3d, original_img, dest_folder, patient_id)
+            # save_nifti_volume(volume_3d, original_img, dest_folder, patient_id)
 
-            # # Post-process the stitched 3D volume (remove small components or keep largest)
-            # try:
-            #     volume_3d_pp = postprocess_volume(
-            #         volume_3d,
-            #         args.num_classes,
-            #         min_size_voxels=args.pp_min_size_voxels,
-            #         keep_largest=args.pp_keep_largest,
-            #     )
-            #     print(f"Applied 3D post-processing (keep_largest={args.pp_keep_largest}, min_size_voxels={args.pp_min_size_voxels}) for patient {patient_id}")
-            # except Exception as e:
-            #     print(f"Warning: post-processing failed for {patient_id}, saving unprocessed volume. Error: {e}")
-            #     volume_3d_pp = volume_3d
+            # Post-process the stitched 3D volume (remove small components or keep largest)
+            try:
+                volume_3d_pp = postprocess_volume(
+                    volume_3d,
+                    args.num_classes,
+                    min_size_voxels=args.pp_min_size_voxels,
+                    keep_largest=args.pp_keep_largest,
+                )
+                print(f"Applied 3D post-processing (keep_largest={args.pp_keep_largest}, min_size_voxels={args.pp_min_size_voxels}) for patient {patient_id}")
+            except Exception as e:
+                print(f"Warning: post-processing failed for {patient_id}, saving unprocessed volume. Error: {e}")
+                volume_3d_pp = volume_3d
             
-            # save_nifti_volume(volume_3d_pp, original_img, dest_folder, patient_id)
+            save_nifti_volume(volume_3d_pp, original_img, dest_folder, patient_id)
             
         except Exception as e:
             print(f"Error processing patient {patient_id}: {e}")

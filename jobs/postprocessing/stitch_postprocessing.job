@@ -13,18 +13,39 @@ module load 2023
 module load Anaconda3/2023.07-2
 source activate ai4mi
 
+# ensure we run from the repository root and python can import local modules
+cd "$SLURM_SUBMIT_DIR"
+export PYTHONPATH="$PWD:$PYTHONPATH"
+
 # Stitch predictions for all three seeds
 for SEED in 42 123 456; do
     echo "Stitching predictions for seed $SEED..."
     
-    python stitch.py \
-        --data_folder results/baseline/baseline_seed${SEED}/best_epoch/val \
-        --dest_folder stitched_data/postprocessing/stitched_seed${SEED}/val/pred \
-        --num_classes 5 \
-        --grp_regex "(Patient_\d\d)_\d\d\d\d" \
-        --source_scan_pattern "data/segthor_train/train/{id_}/GT.nii.gz"
+    # If per-slice predictions exist (training outputs), stitch them
+    if [ -d "results/baseline/baseline_seed${SEED}/best_epoch/val" ]; then
+        echo "Found per-slice predictions for seed ${SEED}; stitching them"
+        python improvements/stitch_postprocessing.py \
+            --data_folder results/baseline/baseline_seed${SEED}/best_epoch/val \
+            --dest_folder stitched_data/postprocessing/stitched_seed${SEED}/val/pred \
+            --num_classes 5 \
+            --grp_regex "(Patient_\d\d)_\d\d\d\d" \
+            --source_scan_pattern "data/segthor_train/train/{id_}/GT.nii.gz"
+    else
+        # Otherwise, try to post-process already-stitched prediction volumes from baseline
+        if [ -d "stitched_data/baseline/stitched_seed${SEED}/val/pred" ]; then
+            echo "No per-slice predictions; found already-stitched predictions for seed ${SEED}; applying 3D post-processing"
+            python improvements/postprocess_existing_stitched.py \
+                --src_folder stitched_data/baseline/stitched_seed${SEED}/val/pred \
+                --dst_folder stitched_data/postprocessing/stitched_seed${SEED}/val/pred \
+                --num_classes 5 \
+                --pp_min_size_voxels 1000 \
+                --pp_keep_largest
+        else
+            echo "Warning: no predictions available to stitch for seed ${SEED} (neither per-slice nor stitched baseline). Skipping pred generation."
+        fi
+    fi
     
-    python stitch.py \
+    python improvements/stitch_postprocessing.py \
         --data_folder data/SEGTHOR_CLEAN_SEED${SEED}/val/gt \
         --dest_folder stitched_data/postprocessing/stitched_seed${SEED}/val/gt \
         --num_classes 5 \

@@ -13,15 +13,13 @@ module load 2023
 module load Anaconda3/2023.07-2
 source activate ai4mi
 
-# Compute metrics for all three seeds
-
-    
+# Aggregate metrics for postprocessing results
 python aggregate_metrics.py \
     --base_path results/ \
-    --experiments baseline \
+    --experiments postprocessing \
     --seeds 42 123 456 \
     --metrics 3d_dice 3d_hd95 \
-    --output_dir results/baseline/aggregated_baseline
+    --output_dir results/postprocessing/aggregated_postprocessing
     
 
 
