@@ -18,11 +18,9 @@ source activate ai4mi
     
 python aggregate_metrics.py \
     --base_path results/ \
-    --experiments baseline \
+    --experiments augmented \
     --seeds 42 123 456 \
     --metrics 3d_dice 3d_hd95 \
-    --output_dir results/baseline/aggregated_baseline
-    
-
+    --output_dir results/augmented/aggregated_augmented
 
 

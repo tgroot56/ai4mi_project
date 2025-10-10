@@ -18,7 +18,7 @@ for SEED in 42 123 456; do
     echo "Stitching predictions for seed $SEED..."
     
     python stitch.py \
-        --data_folder results/augmented/SEED${SEED}/best_epoch/val \
+        --data_folder results/augmented/seed${SEED}/best_epoch/val \
         --dest_folder stitched_data/augmented/seed${SEED}/val/pred \
         --num_classes 5 \
         --grp_regex "(Patient_\d\d)_\d\d\d\d" \
