@@ -10,6 +10,8 @@ results/**
 !results/**/aggregated_baseline/**
 !results/**/aggregated_preprocessing/
 !results/**/aggregated_preprocessing/**
+!results/**/aggregated_loss/
+!results/**/aggregated_loss/**
 improvements/results/
 volumes/
 ai4mi/
