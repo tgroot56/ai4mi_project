@@ -1,0 +1,16 @@
+
+=== Paired comparison (averaged across seeds per patient) ===
+
+Metric: 3d_dice  (improved − baseline)
+N patients: 50
+Median improvement: 0.059737
+95% bootstrap CI (median): [0.026955, 0.079887]
+Wilcoxon W: 46.00, p=3.4e-11
+Rank-biserial r: -0.928
+
+Metric: 3d_hd95  (baseline − improved)
+N patients: 50
+Median improvement: 1.001343
+95% bootstrap CI (median): [0.488281, 2.519922]
+Wilcoxon W: 237.00, p=0.000111
+Rank-biserial r: -0.628

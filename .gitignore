@@ -18,4 +18,4 @@ ai4mi/
 __pycache__/
 projects
 !distorch/compute_metrics.py
-!statistical_test.py
+!statistical_test.txt
