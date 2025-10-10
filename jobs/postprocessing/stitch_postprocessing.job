@@ -1,0 +1,37 @@
+#!/bin/bash
+
+#SBATCH --partition=gpu_a100
+#SBATCH --gpus=1
+#SBATCH --job-name=stitch_postprocessing
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=9
+#SBATCH --time=02:00:00
+#SBATCH --output=outputs/stitch_postprocessing.out
+
+module purge
+module load 2023
+module load Anaconda3/2023.07-2
+source activate ai4mi
+
+# Stitch predictions for all three seeds
+for SEED in 42 123 456; do
+    echo "Stitching predictions for seed $SEED..."
+    
+    python stitch.py \
+        --data_folder results/baseline/baseline_seed${SEED}/best_epoch/val \
+        --dest_folder stitched_data/postprocessing/stitched_seed${SEED}/val/pred \
+        --num_classes 5 \
+        --grp_regex "(Patient_\d\d)_\d\d\d\d" \
+        --source_scan_pattern "data/segthor_train/train/{id_}/GT.nii.gz"
+    
+    python stitch.py \
+        --data_folder data/SEGTHOR_CLEAN_SEED${SEED}/val/gt \
+        --dest_folder stitched_data/postprocessing/stitched_seed${SEED}/val/gt \
+        --num_classes 5 \
+        --grp_regex "(Patient_\d\d)_\d\d\d\d" \
+        --source_scan_pattern "data/segthor_train/train/{id_}/GT.nii.gz"
+    
+    echo "Completed stitching for seed $SEED"
+done
+
+echo "All stitching completed!"
