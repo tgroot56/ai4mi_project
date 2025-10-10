@@ -1,0 +1,40 @@
+================================================================================
+CROSS-SEED METRICS SUMMARY
+================================================================================
+
+EXPERIMENT: LOSS/CEDICE
+--------------------------------------------------
+
+3D_DICE:
+  Seeds used: [42, 123, 456] (3 total)
+  Patients: 10
+  Classes: 5
+  Overall (all classes): 0.7670 ± 0.2051
+  Foreground only: 0.7091 ± 0.1893
+  Per-class statistics:
+    Background  : 0.9985 ± 0.0006
+    Esophagus   : 0.5189 ± 0.1448
+    Heart       : 0.8642 ± 0.1135
+    Trachea     : 0.7330 ± 0.1611
+    Aorta       : 0.7202 ± 0.1505
+
+3D_HD95:
+  Seeds used: [42, 123, 456] (3 total)
+  Patients: 10
+  Classes: 5
+  Overall (all classes): 11.4017 ± 10.9238
+  Foreground only: 13.8542 ± 10.9042
+  Per-class statistics:
+    Background  : 1.5920 ± 0.8687
+    Esophagus   : 13.4882 ± 11.2798
+    Heart       : 14.1364 ± 9.5347
+    Trachea     : 13.3073 ± 13.5674
+    Aorta       : 14.4848 ± 8.5132
+
+==================================================
+
+NOTES:
+- Values shown as mean ± standard deviation across seeds
+- For Dice: Higher values indicate better performance
+- For HD95: Lower values indicate better performance
+- Foreground metrics exclude the background class
