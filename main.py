@@ -148,12 +148,22 @@ def runTraining(args):
     print(f">>> Setting up to train on {args.dataset} with {args.mode}")
     net, optimizer, device, train_loader, val_loader, K = setup(args)
 
-    if args.mode == "full":
-        loss_fn = CrossEntropy(idk=list(range(K)))  # Supervise both background and foreground
-    elif args.mode in ["partial"] and args.dataset == 'SEGTHOR':
-        loss_fn = CrossEntropy(idk=[0, 1, 3, 4])  # Do not supervise the heart (class 2)
+    
+    if args.improvement == 'loss':
+        from improvements.loss import build_loss
+        loss_fn = build_loss(K, args.mode, lambda_dice=args.lambda_dice, lambda_boundary=args.lambda_boundary)
     else:
-        raise ValueError(args.mode, args.dataset)
+        # default baseline path (unchanged!)
+        if args.mode == "full":
+            from losses import CrossEntropy 
+            # keep your original baseline choice here:
+            from losses import CEDice
+            loss_fn = CEDice(lambda_dice=0.5, idk=list(range(K)), exclude_bg_in_dice=True)
+        elif args.mode in ["partial"] and args.dataset == 'SEGTHOR':
+            from losses import CEDice
+            loss_fn = CEDice(lambda_dice=0.5, idk=[0,1,3,4], exclude_bg_in_dice=True)
+        else:
+            raise ValueError(args.mode, args.dataset)
 
     # Notice one has the length of the _loader_, and the other one of the _dataset_
     log_loss_tra: Tensor = torch.zeros((args.epochs, len(train_loader)))
@@ -266,6 +276,14 @@ def main():
                         help="Keep only a fraction (10 samples) of the datasets, "
                              "to test the logics around epochs and logging easily.")
     parser.add_argument('--seed', type=int, required=True, choices=[42, 123, 456])
+
+    # new arguments for loss
+    parser.add_argument('--improvement', default='none',
+                    choices=['none','loss'],
+                        help="Use project improvement. 'none' = baseline; 'loss' = CE+Dice+Boundary from improvements.")
+    parser.add_argument('--lambda_dice', type=float, default=0.3)
+    parser.add_argument('--lambda_boundary', type=float, default=0.1)
+
 
     args = parser.parse_args()
 
