@@ -153,15 +153,10 @@ def runTraining(args):
         from improvements.loss import build_loss
         loss_fn = build_loss(K, args.mode, lambda_dice=args.lambda_dice, lambda_boundary=args.lambda_boundary)
     else:
-        # default baseline path (unchanged!)
         if args.mode == "full":
-            from losses import CrossEntropy 
-            # keep your original baseline choice here:
-            from losses import CEDice
-            loss_fn = CEDice(lambda_dice=0.5, idk=list(range(K)), exclude_bg_in_dice=True)
+            loss_fn = CrossEntropy(idk=list(range(K)))  # Supervise both background and foreground
         elif args.mode in ["partial"] and args.dataset == 'SEGTHOR':
-            from losses import CEDice
-            loss_fn = CEDice(lambda_dice=0.5, idk=[0,1,3,4], exclude_bg_in_dice=True)
+            loss_fn = CrossEntropy(idk=[0, 1, 3, 4])  # Do not supervise the heart (class 2)
         else:
             raise ValueError(args.mode, args.dataset)
 
