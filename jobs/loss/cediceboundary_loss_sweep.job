@@ -1,0 +1,35 @@
+#!/bin/bash
+#SBATCH --job-name=S2Bnd
+#SBATCH --partition=gpu_a100
+#SBATCH --gpus=1
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=18
+#SBATCH --time=01:00:00
+#SBATCH --output=/home/scur1015/ai4mi_project/logs/out-%x.%A.out
+#SBATCH --error=/home/scur1015/ai4mi_project/logs/err-%x.%A.err
+
+cd $HOME/ai4mi_project
+module purge
+module load 2024
+module load Miniconda3/24.7.1-0
+source "$(conda info --base)/etc/profile.d/conda.sh"
+conda activate ai4mi
+
+BEST_LD=${BEST_LD:-0.30}     
+L_BND=(0.05 0.10)             
+
+for LB in "${L_BND[@]}"; do
+  echo ">>> Running λ_dice=${BEST_LD}, λ_boundary=${LB}"
+  DEST="results/loss/s2_boundary_sweep/ld${BEST_LD}_lb${LB}"
+
+  python -O main.py \
+    --dataset SEGTHOR_CLEAN_SEED${SEED} --mode full \
+    --epochs 12 --gpu \
+    --seed 42 \
+    --improvement loss \
+    --lambda_dice ${BEST_LD} \
+    --lambda_boundary ${LB} \
+    --dest "${DEST}"
+
+  echo "{\"lambda_dice\": ${BEST_LD}, \"lambda_boundary\": ${LB}}" > "${DEST}/config.json"
+done

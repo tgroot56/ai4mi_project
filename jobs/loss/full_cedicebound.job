@@ -1,0 +1,72 @@
+#!/bin/bash
+#SBATCH --job-name=Full_CEDice_multi
+#SBATCH --partition=gpu_a100
+#SBATCH --gpus=1
+#SBATCH --cpus-per-task=8
+#SBATCH --time=09:00:00
+#SBATCH --output=/home/scur1015/ai4mi_project/logs/out-%x.%A.out
+#SBATCH --error=/home/scur1015/ai4mi_project/logs/err-%x.%A.err
+set -euo pipefail
+
+cd $HOME/ai4mi_project
+module purge
+module load 2024
+module load Miniconda3/24.7.1-0
+source "$(conda info --base)/etc/profile.d/conda.sh"
+conda activate ai4mi  
+
+LD=${LD:-0.30}     #
+LB=${LB:-0.05}
+SEEDS=(42 123 456)
+
+for SEED in "${SEEDS[@]}"; do
+  DATASET="SEGTHOR_CLEAN_SEED${SEED}" 
+  RESULT_DIR="results/loss/cedicebound/metrics_seed${SEED}"
+  STITCH_DIR="stitched_data/loss/cedicebound/stitched_seed${SEED}"
+
+  echo "=== Seed ${SEED} | Dataset ${DATASET} | ld=${LD} lb=${LB} ==="
+
+  # 1) Train
+  python -O main.py \
+    --dataset "${DATASET}" --mode full \
+    --epochs 25 --gpu \
+    --seed ${SEED} \
+    --improvement loss \
+    --lambda_dice ${LD} \
+    --lambda_boundary ${LB} \
+    --dest "${RESULT_DIR}"
+
+  echo "{\"lambda_dice\": ${LD}, \"lambda_boundary\": ${LB}, \"seed\": ${SEED}, \"dataset\": \"${DATASET}\"}" > "${RESULT_DIR}/config.json"
+
+  # 2) Stitch best epoch -> 3D nifti
+  python stitch.py \
+    --data_folder "${RESULT_DIR}/best_epoch/val" \
+    --dest_folder "${STITCH_DIR}/stitched_val" \
+    --num_classes 5 \
+    --grp_regex "(Patient_\\d\\d)_\\d\\d\\d\\d" \
+    --source_scan_pattern "data/segthor_fixed/train/{id_}/GT.nii.gz"
+
+  # 3) Copy GTs matching the same patients
+  mkdir -p "${STITCH_DIR}/val/gt"
+  for f in "${STITCH_DIR}/stitched_val"/*.nii.gz; do
+    bn=$(basename "$f"); id="${bn%.nii.gz}"
+    cp "data/segthor_fixed/train/${id}/GT.nii.gz" "${STITCH_DIR}/val/gt/${bn}"
+  done
+
+  # 4) DisTorch metrics
+  python distorch/compute_metrics.py \
+    --ref_folder "${STITCH_DIR}/val/gt" \
+    --pred_folder "${STITCH_DIR}/stitched_val" \
+    --ref_extension .nii.gz \
+    --pred_extension .nii.gz \
+    --num_classes 5 \
+    --metrics 3d_dice 3d_hd95 \
+    --background_class 0 \
+    --save_folder "${RESULT_DIR}/val/metrics" \
+    --chill
+
+  echo ">>> Done seed ${SEED} → metrics in ${RESULT_DIR}/val/metrics"
+  echo
+done
+
+echo "All seeds finished."

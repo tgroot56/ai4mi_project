@@ -1,0 +1,36 @@
+#!/bin/bash
+#SBATCH --job-name=S1Dice
+#SBATCH --partition=gpu_a100
+#SBATCH --gpus=1
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=18
+#SBATCH --time=01:00:00
+#SBATCH --output=/home/scur1015/ai4mi_project/logs/out-%x.%A.out
+#SBATCH --error=/home/scur1015/ai4mi_project/logs/err-%x.%A.err
+
+cd $HOME/ai4mi_project
+module purge
+module load 2024
+module load Miniconda3/24.7.1-0
+source "$(conda info --base)/etc/profile.d/conda.sh"
+conda activate ai4mi
+
+L_DICE=(0.20 0.30)
+
+for LD in "${L_DICE[@]}"; do
+  echo ">>> Running λ_dice = ${LD}"
+
+  DEST="results/s1_dice_sweep/ld${LD}"
+
+  python -O main.py \
+    --dataset SEGTHOR_CLEAN_SEED${SEED} --mode full \
+    --epochs 12 --gpu \
+    --seed 42 \
+    --improvement loss \
+    --lambda_dice ${LD} \
+    --lambda_boundary 0.0 \
+    --dest "${DEST}"
+
+  echo "{\"lambda_dice\": ${LD}, \"lambda_boundary\": 0.0}" > "${DEST}/config.json"
+
+done
