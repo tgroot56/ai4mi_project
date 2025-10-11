@@ -1,3 +1,7 @@
+# Adapted from https://github.com/milesial/Pytorch-UNet
+# Original code licensed under GNU GPL v3.0
+# Modifications for the AI4MI project
+
 """ Parts of the U-Net model """
 
 import torch
