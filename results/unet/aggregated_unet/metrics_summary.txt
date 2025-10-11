@@ -6,30 +6,30 @@ EXPERIMENT: UNET
 --------------------------------------------------
 
 3D_DICE:
-  Seeds used: [42, 456] (2 total)
+  Seeds used: [42, 123, 456] (3 total)
   Patients: 10
   Classes: 5
-  Overall (all classes): 0.8557 ± 0.1257
-  Foreground only: 0.8199 ± 0.1154
+  Overall (all classes): 0.8528 ± 0.1297
+  Foreground only: 0.8162 ± 0.1198
   Per-class statistics:
-    Background  : 0.9990 ± 0.0003
-    Esophagus   : 0.6856 ± 0.0988
-    Heart       : 0.9087 ± 0.0378
-    Trachea     : 0.8159 ± 0.0860
-    Aorta       : 0.8692 ± 0.0797
+    Background  : 0.9989 ± 0.0005
+    Esophagus   : 0.6743 ± 0.1082
+    Heart       : 0.9112 ± 0.0323
+    Trachea     : 0.8293 ± 0.0748
+    Aorta       : 0.8501 ± 0.0928
 
 3D_HD95:
-  Seeds used: [42, 456] (2 total)
+  Seeds used: [42, 123, 456] (3 total)
   Patients: 10
   Classes: 5
-  Overall (all classes): 7.9994 ± 8.4260
-  Foreground only: 9.7998 ± 8.5120
+  Overall (all classes): 8.7875 ± 13.3147
+  Foreground only: 10.7673 ± 14.2089
   Per-class statistics:
-    Background  : 0.7977 ± 0.5836
-    Esophagus   : 10.4066 ± 7.2059
-    Heart       : 9.4188 ± 4.1300
-    Trachea     : 12.0843 ± 13.4847
-    Aorta       : 7.2896 ± 5.1926
+    Background  : 0.8684 ± 0.6616
+    Esophagus   : 10.0830 ± 6.6353
+    Heart       : 9.6231 ± 4.7573
+    Trachea     : 9.8357 ± 11.5628
+    Aorta       : 13.5273 ± 24.4327
 
 ==================================================
 
