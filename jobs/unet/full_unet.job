@@ -1,0 +1,72 @@
+#!/bin/bash
+#SBATCH --job-name=UNet_CE_multi
+#SBATCH --partition=gpu_a100
+#SBATCH --gpus=1
+#SBATCH --cpus-per-task=8
+#SBATCH --time=06:00:00
+#SBATCH --output=/home/scur1015/ai4mi_project/logs/out-%x.%A.out
+#SBATCH --error=/home/scur1015/ai4mi_project/logs/err-%x.%A.err
+set -euo pipefail
+
+cd $HOME/ai4mi_project
+module purge
+module load 2024
+module load Miniconda3/24.7.1-0
+source "$(conda info --base)/etc/profile.d/conda.sh"
+conda activate ai4mi
+
+EPOCHS=${EPOCHS:-25}
+SEEDS=(${SEEDS:-42 123 456})
+
+for SEED in "${SEEDS[@]}"; do
+  DATASET="SEGTHOR_CLEAN_SEED${SEED}"
+  RESULT_DIR="results/arch/unet_ce/metrics_seed${SEED}"
+  STITCH_DIR="stitched_data/arch/unet_ce/stitched_seed${SEED}"
+
+  echo "=== UNet CE | seed ${SEED} | dataset ${DATASET} | epochs ${EPOCHS} ==="
+
+  # 1) Train UNet (CE-only → --improvement none uses CrossEntropy from losses.py)
+  python -O improvements/unet_improvement.py \
+    --dataset "${DATASET}" --mode full \
+    --epochs ${EPOCHS} --gpu \
+    --seed ${SEED} \
+    --improvement none \
+    --dest "${RESULT_DIR}"
+
+  # Save run config
+  mkdir -p "${RESULT_DIR}"
+  echo "{\"loss\": \"CrossEntropy\", \"seed\": ${SEED}, \"dataset\": \"${DATASET}\", \"arch\": \"UNet\"}" \
+    > "${RESULT_DIR}/config.json"
+
+  # 2) Stitch best epoch → 3D NIfTI
+  python stitch.py \
+    --data_folder "${RESULT_DIR}/best_epoch/val" \
+    --dest_folder "${STITCH_DIR}/stitched_val" \
+    --num_classes 5 \
+    --grp_regex "(Patient_\\d\\d)_\\d\\d\\d\\d" \
+    --source_scan_pattern "data/segthor_fixed/train/{id_}/GT.nii.gz"
+
+  # 3) Copy GTs
+  mkdir -p "${STITCH_DIR}/val/gt"
+  for f in "${STITCH_DIR}/stitched_val"/*.nii.gz; do
+    bn=$(basename "$f"); id="${bn%.nii.gz}"
+    cp "data/segthor_fixed/train/${id}/GT.nii.gz" "${STITCH_DIR}/val/gt/${bn}"
+  done
+
+  # 4) DisTorch metrics (3D Dice & HD95)
+  python distorch/compute_metrics.py \
+    --ref_folder "${STITCH_DIR}/val/gt" \
+    --pred_folder "${STITCH_DIR}/stitched_val" \
+    --ref_extension .nii.gz \
+    --pred_extension .nii.gz \
+    --num_classes 5 \
+    --metrics 3d_dice 3d_hd95 \
+    --background_class 0 \
+    --save_folder "${RESULT_DIR}/val/metrics" \
+    --chill
+
+  echo ">>> Done seed ${SEED} → metrics in ${RESULT_DIR}/val/metrics"
+  echo
+done
+
+echo "All UNet CE seeds finished."
