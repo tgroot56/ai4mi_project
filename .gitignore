@@ -12,6 +12,8 @@ results/**
 !results/**/aggregated_preprocessing/**
 !results/**/aggregated_loss/
 !results/**/aggregated_loss/**
+!results/**/aggregated_unet/
+!results/**/aggregated_unet/**
 improvements/results/
 volumes/
 ai4mi/
